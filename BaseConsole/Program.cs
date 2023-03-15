@@ -1,4 +1,4 @@
-﻿Console.WriteLine(".NET Graph Tutorial\n");
+﻿Console.WriteLine("hack-together-basic-learning\n");
 
 var settings = Settings.LoadSettings();
 
