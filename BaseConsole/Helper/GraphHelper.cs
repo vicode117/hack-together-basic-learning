@@ -1,8 +1,6 @@
 using Azure.Core;
 using Azure.Identity;
 using Microsoft.Graph;
-using Microsoft.Graph.Models;
-using Microsoft.Graph.Me.SendMail;
 
 class GraphHelper
 {
@@ -39,19 +37,25 @@ class GraphHelper
         return response.Token;
     }
 
-    public static Task<User?> GetUserAsync()
+    public static Task<User> GetUserAsync()
     {
         // Ensure client isn't null
         _ = _userClient ??
             throw new System.NullReferenceException("Graph has not been initialized for user auth");
 
-        return _userClient.Me.GetAsync(requestConfiguration => requestConfiguration.QueryParameters.Select = new string[] {
-            "displayname", "mail", "userprincipalname"
-        });
+        return _userClient.Me
+            .Request()
+            .Select(u => new
+            {
+                // Only request specific properties
+                u.DisplayName,
+                u.Mail,
+                u.UserPrincipalName
+            })
+            .GetAsync();
     }
 
-    // <GetInboxSnippet>
-    public static Task<MessageCollectionResponse?> GetInboxAsync()
+    public static Task<IMailFolderMessagesCollectionPage> GetInboxAsync()
     {
         // Ensure client isn't null
         _ = _userClient ??
@@ -61,17 +65,21 @@ class GraphHelper
             // Only messages from Inbox folder
             .MailFolders["Inbox"]
             .Messages
-            .GetAsync((config) =>
+            .Request()
+            .Select(m => new
             {
                 // Only request specific properties
-                config.QueryParameters.Select = new[] { "from", "isRead", "receivedDateTime", "subject" };
-                // Get at most 25 results
-                config.QueryParameters.Top = 25;
-                // Sort by received time, newest first
-                config.QueryParameters.Orderby = new[] { "receivedDateTime DESC" };
-            });
+                m.From,
+                m.IsRead,
+                m.ReceivedDateTime,
+                m.Subject
+            })
+            // Get at most 25 results
+            .Top(25)
+            // Sort by received time, newest first
+            .OrderBy("ReceivedDateTime DESC")
+            .GetAsync();
     }
-    // </GetInboxSnippet>
 
     public static async Task SendMailAsync(string subject, string body, string recipient)
     {
@@ -88,25 +96,49 @@ class GraphHelper
                 Content = body,
                 ContentType = BodyType.Text
             },
-            ToRecipients = new List<Recipient>
+            ToRecipients = new Recipient[]
             {
-                new Recipient
+            new Recipient
+            {
+                EmailAddress = new EmailAddress
                 {
-                    EmailAddress = new EmailAddress
-                    {
-                        Address = recipient
-                    }
+                    Address = recipient
                 }
+            }
             }
         };
 
         // Send the message
         await _userClient.Me
-            .SendMail
-            .PostAsync(new SendMailPostRequestBody
+            .SendMail(message)
+            .Request()
+            .PostAsync();
+    }
+
+    public static Task<IOnenoteNotebooksCollectionPage> GetNoteBooksAsync()
+    {
+        // Ensure client isn't null
+        _ = _userClient ??
+            throw new System.NullReferenceException("Graph has not been initialized for user auth");
+
+        return _userClient.Me
+            // Only messages from Inbox folder
+            .Onenote
+            .Notebooks
+            .Request()
+            .Select(m => new
             {
-                Message = message
-            });
+                // Only request specific properties
+                m.DisplayName,
+                m.Links,
+                m.LastModifiedBy,
+                m.LastModifiedDateTime
+            })
+            // Get at most 25 results
+            .Top(25)
+            // Sort by received time, newest first
+            .OrderBy("LastModifiedDateTime DESC")
+            .GetAsync();
     }
 
 }

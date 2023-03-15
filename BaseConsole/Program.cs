@@ -17,7 +17,7 @@ while (choice != 0)
     Console.WriteLine("1. Display access token");
     Console.WriteLine("2. List my inbox");
     Console.WriteLine("3. Send mail");
-    Console.WriteLine("4. Make a Graph call");
+    Console.WriteLine("4. List my notebooks");
 
     try
     {
@@ -49,7 +49,7 @@ while (choice != 0)
             break;
         case 4:
             // Run any Graph code
-            await MakeGraphCallAsync();
+            await ListNotebooksAsync();
             break;
         default:
             Console.WriteLine("Invalid choice! Please try again.");
@@ -101,21 +101,14 @@ async Task DisplayAccessTokenAsync()
     }
 }
 
-// <ListInboxSnippet>
 async Task ListInboxAsync()
 {
     try
     {
         var messagePage = await GraphHelper.GetInboxAsync();
 
-        if (messagePage?.Value == null)
-        {
-            Console.WriteLine("No results returned.");
-            return;
-        }
-
         // Output each message's details
-        foreach (var message in messagePage.Value)
+        foreach (var message in messagePage.CurrentPage)
         {
             Console.WriteLine($"Message: {message.Subject ?? "NO SUBJECT"}");
             Console.WriteLine($"  From: {message.From?.EmailAddress?.Name}");
@@ -126,9 +119,8 @@ async Task ListInboxAsync()
         // If NextPageRequest is not null, there are more messages
         // available on the server
         // Access the next page like:
-        // var nextPageRequest = new MessagesRequestBuilder(messagePage.OdataNextLink, _userClient.RequestAdapter);
-        // var nextPage = await nextPageRequest.GetAsync();
-        var moreAvailable = !string.IsNullOrEmpty(messagePage.OdataNextLink);
+        // messagePage.NextPageRequest.GetAsync();
+        var moreAvailable = messagePage.NextPageRequest != null;
 
         Console.WriteLine($"\nMore messages available? {moreAvailable}");
     }
@@ -137,7 +129,7 @@ async Task ListInboxAsync()
         Console.WriteLine($"Error getting user's inbox: {ex.Message}");
     }
 }
-// </ListInboxSnippet>
+
 
 async Task SendMailAsync()
 {
@@ -166,7 +158,32 @@ async Task SendMailAsync()
     }
 }
 
-async Task MakeGraphCallAsync()
+async Task ListNotebooksAsync()
 {
-    // TODO
+    try
+    {
+        var notebooks = await GraphHelper.GetNoteBooksAsync();
+
+        // Output each message's details
+        foreach (var notebook in notebooks.CurrentPage)
+        {
+            Console.WriteLine($"  Notebook Name: {notebook.DisplayName ?? "NO Name"}");
+            Console.WriteLine($"  WebUrl: {notebook.Links?.OneNoteWebUrl}");
+            Console.WriteLine($"  LastModifiedBy: {notebook?.LastModifiedBy}");
+            Console.WriteLine($"  LastModifiedDateTime: {notebook?.LastModifiedDateTime?.ToLocalTime().ToString()}");
+            Console.WriteLine("==========================================================");
+        }
+
+        // If NextPageRequest is not null, there are more messages
+        // available on the server
+        // Access the next page like:
+        // messagePage.NextPageRequest.GetAsync();
+        var moreAvailable = notebooks.NextPageRequest != null;
+
+        Console.WriteLine($"\nMore notebook available? {moreAvailable}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error getting user's notebooks: {ex.Message}");
+    }
 }
