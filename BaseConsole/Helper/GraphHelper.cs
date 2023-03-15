@@ -136,7 +136,7 @@ class GraphHelper
             })
             // Get at most 25 results
             .Top(25)
-            // Sort by received time, newest first
+            // Sort by LastModifiedDateTime, newest first
             .OrderBy("LastModifiedDateTime DESC")
             .GetAsync();
     }
