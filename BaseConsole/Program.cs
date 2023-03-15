@@ -169,7 +169,7 @@ async Task ListNotebooksAsync()
         {
             Console.WriteLine($"  Notebook Name: {notebook.DisplayName ?? "NO Name"}");
             Console.WriteLine($"  WebUrl: {notebook.Links?.OneNoteWebUrl.Href}");
-            Console.WriteLine($"  LastModifiedBy: {notebook?.LastModifiedBy}");
+            Console.WriteLine($"  LastModifiedBy: {notebook?.LastModifiedBy.User.DisplayName}");
             Console.WriteLine($"  LastModifiedDateTime: {notebook?.LastModifiedDateTime?.ToLocalTime().ToString()}");
             Console.WriteLine("==========================================================");
         }
