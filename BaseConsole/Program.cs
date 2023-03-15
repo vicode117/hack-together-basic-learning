@@ -168,7 +168,7 @@ async Task ListNotebooksAsync()
         foreach (var notebook in notebooks.CurrentPage)
         {
             Console.WriteLine($"  Notebook Name: {notebook.DisplayName ?? "NO Name"}");
-            Console.WriteLine($"  WebUrl: {notebook.Links?.OneNoteWebUrl.ToString()}");
+            Console.WriteLine($"  WebUrl: {notebook.Links?.OneNoteWebUrl.Href}");
             Console.WriteLine($"  LastModifiedBy: {notebook?.LastModifiedBy}");
             Console.WriteLine($"  LastModifiedDateTime: {notebook?.LastModifiedDateTime?.ToLocalTime().ToString()}");
             Console.WriteLine("==========================================================");
