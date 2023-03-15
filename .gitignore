@@ -695,3 +695,4 @@ $RECYCLE.BIN/
 # config
 
 config.json
+appsettings.Development.json
