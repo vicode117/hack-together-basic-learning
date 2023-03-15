@@ -38,4 +38,75 @@ class GraphHelper
         var response = await _deviceCodeCredential.GetTokenAsync(context);
         return response.Token;
     }
+
+    public static Task<User?> GetUserAsync()
+    {
+        // Ensure client isn't null
+        _ = _userClient ??
+            throw new System.NullReferenceException("Graph has not been initialized for user auth");
+
+        return _userClient.Me.GetAsync(requestConfiguration => requestConfiguration.QueryParameters.Select = new string[] {
+            "displayname", "mail", "userprincipalname"
+        });
+    }
+
+    // <GetInboxSnippet>
+    public static Task<MessageCollectionResponse?> GetInboxAsync()
+    {
+        // Ensure client isn't null
+        _ = _userClient ??
+            throw new System.NullReferenceException("Graph has not been initialized for user auth");
+
+        return _userClient.Me
+            // Only messages from Inbox folder
+            .MailFolders["Inbox"]
+            .Messages
+            .GetAsync((config) =>
+            {
+                // Only request specific properties
+                config.QueryParameters.Select = new[] { "from", "isRead", "receivedDateTime", "subject" };
+                // Get at most 25 results
+                config.QueryParameters.Top = 25;
+                // Sort by received time, newest first
+                config.QueryParameters.Orderby = new[] { "receivedDateTime DESC" };
+            });
+    }
+    // </GetInboxSnippet>
+
+    public static async Task SendMailAsync(string subject, string body, string recipient)
+    {
+        // Ensure client isn't null
+        _ = _userClient ??
+            throw new System.NullReferenceException("Graph has not been initialized for user auth");
+
+        // Create a new message
+        var message = new Message
+        {
+            Subject = subject,
+            Body = new ItemBody
+            {
+                Content = body,
+                ContentType = BodyType.Text
+            },
+            ToRecipients = new List<Recipient>
+            {
+                new Recipient
+                {
+                    EmailAddress = new EmailAddress
+                    {
+                        Address = recipient
+                    }
+                }
+            }
+        };
+
+        // Send the message
+        await _userClient.Me
+            .SendMail
+            .PostAsync(new SendMailPostRequestBody
+            {
+                Message = message
+            });
+    }
+
 }

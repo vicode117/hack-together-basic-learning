@@ -74,7 +74,18 @@ void InitializeGraph(Settings settings)
 
 async Task GreetUserAsync()
 {
-    // TODO
+    try
+    {
+        var user = await GraphHelper.GetUserAsync();
+        Console.WriteLine($"Hello, {user?.DisplayName}!");
+        // For Work/school accounts, email is in Mail property
+        // Personal accounts, email is in UserPrincipalName
+        Console.WriteLine($"Email: {user?.Mail ?? user?.UserPrincipalName ?? ""}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error getting user: {ex.Message}");
+    }
 }
 
 async Task DisplayAccessTokenAsync()
@@ -90,14 +101,69 @@ async Task DisplayAccessTokenAsync()
     }
 }
 
+// <ListInboxSnippet>
 async Task ListInboxAsync()
 {
-    // TODO
+    try
+    {
+        var messagePage = await GraphHelper.GetInboxAsync();
+
+        if (messagePage?.Value == null)
+        {
+            Console.WriteLine("No results returned.");
+            return;
+        }
+
+        // Output each message's details
+        foreach (var message in messagePage.Value)
+        {
+            Console.WriteLine($"Message: {message.Subject ?? "NO SUBJECT"}");
+            Console.WriteLine($"  From: {message.From?.EmailAddress?.Name}");
+            Console.WriteLine($"  Status: {(message.IsRead!.Value ? "Read" : "Unread")}");
+            Console.WriteLine($"  Received: {message.ReceivedDateTime?.ToLocalTime().ToString()}");
+        }
+
+        // If NextPageRequest is not null, there are more messages
+        // available on the server
+        // Access the next page like:
+        // var nextPageRequest = new MessagesRequestBuilder(messagePage.OdataNextLink, _userClient.RequestAdapter);
+        // var nextPage = await nextPageRequest.GetAsync();
+        var moreAvailable = !string.IsNullOrEmpty(messagePage.OdataNextLink);
+
+        Console.WriteLine($"\nMore messages available? {moreAvailable}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error getting user's inbox: {ex.Message}");
+    }
 }
+// </ListInboxSnippet>
 
 async Task SendMailAsync()
 {
-    // TODO
+    try
+    {
+        // Send mail to the signed-in user
+        // Get the user for their email address
+        var user = await GraphHelper.GetUserAsync();
+
+        var userEmail = user?.Mail ?? user?.UserPrincipalName;
+
+        if (string.IsNullOrEmpty(userEmail))
+        {
+            Console.WriteLine("Couldn't get your email address, canceling...");
+            return;
+        }
+
+        await GraphHelper.SendMailAsync("Testing Microsoft Graph",
+            "Hello world!", userEmail);
+
+        Console.WriteLine("Mail sent.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error sending mail: {ex.Message}");
+    }
 }
 
 async Task MakeGraphCallAsync()
